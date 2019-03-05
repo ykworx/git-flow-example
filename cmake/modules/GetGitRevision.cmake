@@ -15,11 +15,12 @@ execute_process(
 	COMMAND bash "-c" "${GIT_EXECUTABLE} tag -l --merged master --sort=-*authordate | head -n1" 
 	OUTPUT_VARIABLE LATEST)
 
-if(${LATEST})
+if(LATEST)
 	string(REGEX REPLACE "(.*)\n$" "\\1" LATEST ${LATEST})
 	execute_process(
 		COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD ^${LATEST} --ancestry-path ${LATEST} --count"
 		OUTPUT_VARIABLE COUNT)
+	message(${LATEST})
 else()
 	set(COUNT 0)
 	set(LATEST "0.0.0")
