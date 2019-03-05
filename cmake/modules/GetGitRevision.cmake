@@ -31,7 +31,7 @@ string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" PATCH ${LATEST})
 
 if(${BRANCH} STREQUAL "master")
 	set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${PATCH}-${APP_VERSION_SHA1})
-elseif(${BRANCH} MATCHES "^develop/.*")
+elseif(${BRANCH} MATCHES "^develop.*")
 	set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${PATCH}-beta-${APP_VERSION_SHA1})
 elseif(${BRANCH} MATCHES "^feature/.*")
 	set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${PATCH}-alpha-${APP_VERSION_SHA1})
