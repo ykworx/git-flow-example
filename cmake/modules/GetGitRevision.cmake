@@ -12,18 +12,24 @@ execute_process(
 	OUTPUT_VARIABLE BRANCH)
 string(REGEX REPLACE "(.*)\n$" "\\1" BRANCH ${BRANCH})
 execute_process(
-	COMMAND bash "-c" "${GIT_EXECUTABLE} tag -l --merged master --sort=-*authordate | head -n1" 
-	OUTPUT_VARIABLE LATEST)
+  COMMAND bash "-c" "${GIT_EXECUTABLE} tag -l --merged master --sort=-*authordate | head -n1" 
+  OUTPUT_VARIABLE MASTER_TAG)
 
-if(LATEST)
-	string(REGEX REPLACE "(.*)\n$" "\\1" LATEST ${LATEST})
+if(MASTER_TAG)
+  string(REGEX REPLACE "(.*)\n$" "\\1" MASTER_TAG ${MASTER_TAG})
 	execute_process(
-		COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD ^${LATEST} --ancestry-path ${LATEST} --count"
+    COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD ^${MASTER_TAG} --ancestry-path ${MASTER_TAG} --count"
 		OUTPUT_VARIABLE COUNT)
-	message(${LATEST})
+  message(${MASTER_TAG})
 else()
 	set(COUNT 0)
-	set(LATEST "0.0.0")
+  set(MASTER_TAG "0.0.0")
+endif()
+
+if(${BRANCH} MATCHES "^release/.*")
+  string(REGEX REPLACE "^release/(.*)" "\\1" LATEST ${BRANCH})
+else()
+  set(LATEST ${MASTER_TAG})
 endif()
 
 string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" APP_VERSION_MAJOR ${LATEST})
@@ -54,7 +60,7 @@ function(print_version_info)
 	message(STATUS "  PROJECT     ${CMAKE_PROJECT_NAME}")
 	message(STATUS "  VERSION     ${APP_VERSION}")
 	message(STATUS "  GIT BRANCH  ${BRANCH}")
-	message(STATUS "  GIT LATEST  ${LATEST}")
+  message(STATUS "  GIT RELEASE ${MASTER_TAG}")
 	message(STATUS "  GIT COMMIT  ${COUNT}")
 	message(STATUS "  GIT SHA1    ${APP_VERSION_SHA1}")
 	message(STATUS "========================================")
