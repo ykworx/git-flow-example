@@ -6,6 +6,7 @@ endif()
 execute_process(
 	COMMAND bash "-c" "${GIT_EXECUTABLE} describe --always --dirty"
 	OUTPUT_VARIABLE APP_VERSION_SHA1)
+string(REGEX MATCH "g.*\n$" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
 string(REGEX REPLACE "(.*)\n$" "\\1" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
 execute_process(
 	COMMAND bash "-c" "${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD"
@@ -19,10 +20,10 @@ if(MASTER_TAG)
   string(REGEX REPLACE "(.*)\n$" "\\1" MASTER_TAG ${MASTER_TAG})
 	execute_process(
     COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD ^${MASTER_TAG} --ancestry-path ${MASTER_TAG} --count"
-		OUTPUT_VARIABLE COUNT)
-  message(${MASTER_TAG})
+    OUTPUT_VARIABLE COMMIT)
+  string(REGEX REPLACE "(.*)\n$" "\\1" COMMIT ${COMMIT})
 else()
-	set(COUNT 0)
+  set(COMMIT 0)
   set(MASTER_TAG "0.0.0")
 endif()
 
@@ -61,7 +62,7 @@ function(print_version_info)
 	message(STATUS "  VERSION     ${APP_VERSION}")
 	message(STATUS "  GIT BRANCH  ${BRANCH}")
   message(STATUS "  GIT RELEASE ${MASTER_TAG}")
-	message(STATUS "  GIT COMMIT  ${COUNT}")
+  message(STATUS "  GIT COMMIT  ${COMMIT}")
 	message(STATUS "  GIT SHA1    ${APP_VERSION_SHA1}")
 	message(STATUS "========================================")
 endfunction()
