@@ -4,10 +4,16 @@ endif()
 
 # Git executable is extracted from parameters.
 execute_process(
-	COMMAND bash "-c" "${GIT_EXECUTABLE} describe --always --dirty"
-	OUTPUT_VARIABLE APP_VERSION_SHA1)
-string(REGEX MATCH "g.*\n$" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
-string(REGEX REPLACE "(.*)\n$" "\\1" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
+	COMMAND bash "-c" "${GIT_EXECUTABLE} describe --always --dirty" OUTPUT_VARIABLE APP_VERSION_SHA1)
+if(NOT ${APP_VERSION_SHA1})
+  execute_process(
+    COMMAND bash "-c" "${GIT_EXECUTABLE} rev-parse --short HEAD" OUTPUT_VARIABLE APP_VERSION_SHA1)
+    string(REGEX REPLACE "(.*)\n$" "g\\1" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
+else()
+  string(REGEX MATCH "g.*\n$" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
+  string(REGEX REPLACE "(.*)\n$" "\\1" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
+endif()
+
 execute_process(
 	COMMAND bash "-c" "${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD"
 	OUTPUT_VARIABLE BRANCH)
