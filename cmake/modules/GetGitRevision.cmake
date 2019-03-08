@@ -4,56 +4,64 @@ endif()
 
 # Git executable is extracted from parameters.
 execute_process(
-	COMMAND bash "-c" "${GIT_EXECUTABLE} describe --always --dirty" OUTPUT_VARIABLE APP_VERSION_SHA1)
-if(NOT ${APP_VERSION_SHA1})
-  execute_process(
-    COMMAND bash "-c" "${GIT_EXECUTABLE} rev-parse --short HEAD" OUTPUT_VARIABLE APP_VERSION_SHA1)
-    string(REGEX REPLACE "(.*)\n$" "g\\1" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
-else()
-  string(REGEX MATCH "g.*\n$" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
-  string(REGEX REPLACE "(.*)\n$" "\\1" APP_VERSION_SHA1 ${APP_VERSION_SHA1})
-endif()
-
-execute_process(
 	COMMAND bash "-c" "${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD"
 	OUTPUT_VARIABLE BRANCH)
 string(REGEX REPLACE "(.*)\n$" "\\1" BRANCH ${BRANCH})
+
 execute_process(
-  COMMAND bash "-c" "${GIT_EXECUTABLE} tag -l --merged master --sort=-*authordate | head -n1" 
-  OUTPUT_VARIABLE MASTER_TAG)
-
-if(MASTER_TAG)
-  string(REGEX REPLACE "(.*)\n$" "\\1" MASTER_TAG ${MASTER_TAG})
-	execute_process(
-    COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD ^${MASTER_TAG} --ancestry-path ${MASTER_TAG} --count"
-    OUTPUT_VARIABLE COMMIT)
-  string(REGEX REPLACE "(.*)\n$" "\\1" COMMIT ${COMMIT})
-else()
-  set(COMMIT 0)
-  set(MASTER_TAG "0.0.0")
-endif()
-
-if(${BRANCH} MATCHES "^release/.*")
-  string(REGEX REPLACE "^release/(.*)" "\\1" LATEST ${BRANCH})
-else()
-  set(LATEST ${MASTER_TAG})
-endif()
-
-string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" APP_VERSION_MAJOR ${LATEST})
-string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1" APP_VERSION_MINOR ${LATEST})
-string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" APP_VERSION_PATCH ${LATEST})
+	COMMAND bash "-c" "${GIT_EXECUTABLE} describe --tag --always --dirty" OUTPUT_VARIABLE GIT_DESCRIBE)
+string(REGEX REPLACE "(.*)\n$" "\\1" GIT_DESCRIBE ${GIT_DESCRIBE})
 
 if(${BRANCH} STREQUAL "master")
-	set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}-${APP_VERSION_SHA1})
+	if(${GIT_DESCRIBE} MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+		set(VERSION ${GIT_DESCRIBE})
+	else()
+		message(FATAL_ERROR "Master branch shoud not modify, Please use develop branch") 
+	endif()
 elseif(${BRANCH} MATCHES "^develop.*")
-	set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}-beta-${APP_VERSION_SHA1})
+	# 0.0.1-1-g123456-dirty
+	if(${GIT_DESCRIBE} MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-g.*")
+		string(REGEX REPLACE "(^[0-9]+\\.[0-9]+\\.[0-9]+)-[0-9]+-g.*" "\\1" VERSION ${GIT_DESCRIBE})
+		string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.[0-9]+-([0-9]+)-g.*" "\\1" COMMIT ${GIT_DESCRIBE})
+		string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-(\\.*)" "\\1" SHA1_DIRTY ${GIT_DESCRIBE})
+	# 0.0.1-g123456-dirty
+	elseif(${GIT_DESCRIBE} MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+.*")
+		string(REGEX REPLACE "(^[0-9]+\\.[0-9]+\\.[0-9]+).*" "\\1" VERSION ${GIT_DESCRIBE})
+		set(COMMIT 0)
+		execute_process(
+			COMMAND bash "-c" "${GIT_EXECUTABLE} --always --dirty" OUTPUT_VARIABLE GIT_DESCRIBE)
+		string(REGEX REPLACE "(.*)\n$" "g\\1" SHA1_DIRTY ${GIT_DESCRIBE})
+	endif()
+	set(APP_VERSION ${VERSION}-${COMMIT}-beta-${SHA1_DIRTY})
 elseif(${BRANCH} MATCHES "^feature/.*")
-	set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}-alpha-${APP_VERSION_SHA1})
+	# 0.0.1-1-g123456-dirty
+	if(${GIT_DESCRIBE} MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-g.*")
+		string(REGEX REPLACE "(^[0-9]+\\.[0-9]+\\.[0-9]+)-[0-9]+-g.*" "\\1" VERSION ${GIT_DESCRIBE})
+		string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.[0-9]+-([0-9]+)-g.*" "\\1" COMMIT ${GIT_DESCRIBE})
+		string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-(\\.*)" "\\1" SHA1_DIRTY ${GIT_DESCRIBE})
+	# 0.0.1-g123456-dirty
+	elseif(${GIT_DESCRIBE} MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+.*")
+		string(REGEX REPLACE "(^[0-9]+\\.[0-9]+\\.[0-9]+).*" "\\1" VERSION ${GIT_DESCRIBE})
+		set(COMMIT 0)
+		execute_process(
+			COMMAND bash "-c" "${GIT_EXECUTABLE} --always --dirty" OUTPUT_VARIABLE GIT_DESCRIBE)
+		string(REGEX REPLACE "(.*)\n$" "g\\1" SHA1_DIRTY ${GIT_DESCRIBE})
+	endif()
+	set(APP_VERSION ${VERSION}-${COMMIT}-alpha-${SHA1_DIRTY})
 elseif(${BRANCH} MATCHES "^release/.*")
-	set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}-rc-${APP_VERSION_SHA1})
+	string(REGEX REPLACE "^release/(.*)" "\\1" VERSION ${BRANCH})
+	execute_process(
+		COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD --count" OUTPUT_VARIABLE COMMIT)
+	execute_process(
+		COMMAND bash "-c" "${GIT_EXECUTABLE} describe --always --dirty" OUTPUT_VARIABLE SHA1_DIRTY)
+	set(APP_VERSION ${VERSION}-rc${COMMIT}-g${SHA1_DIRTY})
 else()
-	message(FATAL_ERROR "Current branch is invalid, please change working branch (develop/feature/release/master)")
+	message(FATAL_ERROR "Current branch is invalid, please change working branch (develop/feature/release/master/hotfix)")
 endif()
+
+string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" APP_VERSION_MAJOR ${VERSION})
+string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1" APP_VERSION_MINOR ${VERSION})
+string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" APP_VERSION_PATCH ${VERSION})
 
 configure_file(
 	${CMAKE_MODULE_DIR}/version.h.in 
@@ -67,8 +75,8 @@ function(print_version_info)
 	message(STATUS "  PROJECT     ${CMAKE_PROJECT_NAME}")
 	message(STATUS "  VERSION     ${APP_VERSION}")
 	message(STATUS "  GIT BRANCH  ${BRANCH}")
-  message(STATUS "  GIT RELEASE ${MASTER_TAG}")
-  message(STATUS "  GIT COMMIT  ${COMMIT}")
-	message(STATUS "  GIT SHA1    ${APP_VERSION_SHA1}")
+	message(STATUS "  GIT TAG     ${VERSION}")
+	message(STATUS "  GIT COMMIT  ${COMMIT}")
+	message(STATUS "  GIT SHA1    ${GIT_SHA1_DIRTY}")
 	message(STATUS "========================================")
 endfunction()
