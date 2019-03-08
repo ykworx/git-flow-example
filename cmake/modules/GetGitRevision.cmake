@@ -18,6 +18,7 @@ if(${BRANCH} STREQUAL "master")
 	else()
 		message(FATAL_ERROR "Master branch shoud not modify, Please use develop branch") 
 	endif()
+	set(APP_VERSION ${VERSION})
 elseif(${BRANCH} MATCHES "^develop.*")
 	# 0.0.1-1-g123456-dirty
 	if(${GIT_DESCRIBE} MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+-[0-9]+-g.*")
