@@ -51,7 +51,7 @@ elseif(${BRANCH} MATCHES "^feature/.*")
 elseif(${BRANCH} MATCHES "^release/.*")
 	string(REGEX REPLACE "^release/(.*)" "\\1" VERSION ${BRANCH})
 	execute_process(
-		COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD --count" OUTPUT_VARIABLE COMMIT)
+		COMMAND bash "-c" "${GIT_EXECUTABLE} rev-list HEAD ^${BRANCH} --count" OUTPUT_VARIABLE COMMIT)
 	execute_process(
 		COMMAND bash "-c" "${GIT_EXECUTABLE} describe --always --dirty" OUTPUT_VARIABLE SHA1_DIRTY)
 	set(APP_VERSION ${VERSION}-rc${COMMIT}-g${SHA1_DIRTY})
